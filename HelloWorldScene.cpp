@@ -133,6 +133,7 @@ void HelloWorld::selectFile(Ref* pSender)
 	
 }
 
+//根据传入的路径创建C3Dsprite
 void HelloWorld::createSpriteFormPath(std::string str)
 {
 	layer->removeAllChildren();
