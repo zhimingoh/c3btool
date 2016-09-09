@@ -6,11 +6,16 @@ USING_NS_CC;
 #include<iostream>
 #include <atlconv.h>
 #include<string>
+#include<io.h>
+
 using namespace std;
 
 CCLayer *layer;
 CCLayer *labelLayer;
 Label* label;
+char * filePath = "G:";
+vector<string> files;
+
 Scene* HelloWorld::createScene()
 {
     // 'scene' is an autorelease object
@@ -106,7 +111,25 @@ bool HelloWorld::init()
 
     //// add the sprite as a child to this layer
     //this->addChild(sprite, 0);
-    
+	////获取该路径下的所有文件  
+	getFiles(filePath, files);
+
+	char str[30];
+	int size = files.size();
+	for (int i = 0; i < size; i++)
+	{
+		cout << files[i].c_str() << endl;
+		//CCLOG("===============================%s",files[i].c_str());
+		std::string ext = FileUtils::getInstance()->getFileExtension(files[i].c_str()); //获取文件后缀
+		if (ext ==".c3b")
+		{
+			CCLOG("c3b:%s", files[i].c_str());
+
+		}
+
+
+	}
+
     return true;
 }
 void HelloWorld::selectFile(Ref* pSender)
@@ -177,6 +200,34 @@ void HelloWorld::createSpriteFormPath(std::string str)
 void HelloWorld::coutName(Ref* pSender)
 {
 
+}
+void HelloWorld::getFiles(string path, vector<string>& files)
+{
+
+	//std::string ext = FileUtils::getInstance()->getFileExtension(path); //获取文件后缀
+	//文件句柄  
+	long   hFile = 0;
+	//文件信息  
+	struct _finddata_t fileinfo;
+	string p;
+	if ((hFile = _findfirst(p.assign(path).append("\\*").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//如果是目录,迭代之  
+			//如果不是,加入列表  
+			if ((fileinfo.attrib &  _A_SUBDIR))
+			{
+				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
+					getFiles(p.assign(path).append("\\").append(fileinfo.name), files);
+			}
+			else
+			{
+				files.push_back(p.assign(path).append("\\").append(fileinfo.name));
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
 }
 
 void HelloWorld::menuCloseCallback(Ref* pSender)

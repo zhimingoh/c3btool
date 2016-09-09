@@ -2,7 +2,7 @@
 #define __HELLOWORLD_SCENE_H__
 
 #include "cocos2d.h"
-
+using namespace std;
 class HelloWorld : public cocos2d::Layer
 {
 public:
@@ -15,6 +15,8 @@ public:
 	void selectFile(cocos2d::Ref* pSender);
 	void coutName(cocos2d::Ref* pSender);
 	void createSpriteFormPath(std::string str);
+	void getFiles(std::string path, vector<std::string>& files);
+
 
 	char g_szFileName[MAX_PATH];
 private:
