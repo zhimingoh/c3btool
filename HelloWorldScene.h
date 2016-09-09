@@ -16,6 +16,10 @@ public:
 	void coutName(cocos2d::Ref* pSender);
 	void createSpriteFormPath(std::string str);
 	void getFiles(std::string path, vector<std::string>& files);
+	std::string getApplicationExePath();
+	char* HelloWorld::convertTCharToUtf8(const TCHAR* src);
+	std::string HelloWorld::getApplicationPath();
+
 
 
 	char g_szFileName[MAX_PATH];

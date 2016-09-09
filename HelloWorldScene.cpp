@@ -112,7 +112,7 @@ bool HelloWorld::init()
     //// add the sprite as a child to this layer
     //this->addChild(sprite, 0);
 	////获取该路径下的所有文件  
-	getFiles(filePath, files);
+	getFiles(getApplicationPath(), files);
 
 	char str[30];
 	int size = files.size();
@@ -132,6 +132,61 @@ bool HelloWorld::init()
 
     return true;
 }
+std::string HelloWorld::getApplicationExePath()
+{
+	TCHAR szFileName[MAX_PATH];
+	GetModuleFileName(NULL, szFileName, MAX_PATH);
+	std::u16string u16ApplicationName;
+	char *applicationExePath = convertTCharToUtf8(szFileName);
+	std::string path(applicationExePath);
+	CC_SAFE_FREE(applicationExePath);
+	CCLOG("=========%s", path);
+	return path;
+}
+std::string HelloWorld::getApplicationPath()
+{
+	std::string path = getApplicationExePath();
+	size_t pos;
+	while ((pos = path.find_first_of("\\")) != std::string::npos)
+	{
+		path.replace(pos, 1, "/");
+	}
+	size_t p = path.find_last_of("/");
+	string workdir;
+	if (p != path.npos)
+	{
+		workdir = path.substr(0, p);
+	}
+
+	return workdir;
+}
+
+char* HelloWorld::convertTCharToUtf8(const TCHAR* src)
+{
+#ifdef UNICODE
+	WCHAR* tmp = (WCHAR*)src;
+	size_t size = wcslen(src) * 3 + 1;
+	char* dest = new char[size];
+	memset(dest, 0, size);
+	WideCharToMultiByte(CP_UTF8, 0, tmp, -1, dest, size, NULL, NULL);
+	return dest;
+#else
+	char* tmp = (char*)src;
+	uint32 size = strlen(tmp) + 1;
+	WCHAR* dest = new WCHAR[size];
+	memset(dest, 0, sizeof(WCHAR)*size);
+	MultiByteToWideChar(CP_ACP, 0, src, -1, dest, (int)size); // convert local code to unicode.
+
+	size = wcslen(dest) * 3 + 1;
+	char* dest2 = new char[size];
+
+	memset(dest2, 0, size);
+	WideCharToMultiByte(CP_UTF8, 0, dest, -1, dest2, size, NULL, NULL); // convert unicode to utf8.
+	delete[] dest;
+	return dest2;
+#endif
+}
+
 void HelloWorld::selectFile(Ref* pSender)
 {
 	CCLOG("SELECT");
