@@ -1,20 +1,27 @@
-#include "HelloWorldScene.h"
+ï»¿#include "HelloWorldScene.h"
 #include "SimpleAudioEngine.h"
 #include <tchar.h>
 
 USING_NS_CC;
+USING_NS_CC_EXT;
+
 #include<iostream>
 #include <atlconv.h>
 #include<string>
 #include<io.h>
+#include "CustomTableViewCell.h"
 
 using namespace std;
 
 CCLayer *layer;
 CCLayer *labelLayer;
+CCLayer *listViewLayer;
+
 Label* label;
 char * filePath = "G:";
 vector<string> files;
+vector < string> targetFiles;
+int filesNum;
 
 Scene* HelloWorld::createScene()
 {
@@ -90,6 +97,10 @@ bool HelloWorld::init()
     // add the label as a child to this layer
     this->addChild(label, 1);
 
+	////è·å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶  
+	getFiles(getApplicationPath(), files);
+	reckonNum();
+
 	CCSize s = CCDirector::sharedDirector()->getWinSize();
 	//layer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), 200, 200);
 	layer = CCLayer::create();
@@ -98,40 +109,33 @@ bool HelloWorld::init()
 	layer->setPosition(s.width / 2, s.height / 2);
 	this->addChild(layer);
 
-	labelLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), s.width, 25);
-	//labelLayer->ignoreAnchorPointForPosition(false);
-	labelLayer->setAnchorPoint(Vec2(0,0));
-	labelLayer->setPosition(0,0);
-	this->addChild(labelLayer);
-    // add "HelloWorld" splash screen"
-    //auto sprite = Sprite::create("HelloWorld.png");
+	
+	listViewLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), s.width, 25);
+	listViewLayer->setContentSize(Size(150, s.height));
+	listViewLayer->ignoreAnchorPointForPosition(false);
+	listViewLayer->setAnchorPoint(Vec2(1,0));
+	listViewLayer->setPosition(s.width, 0);
+	this->addChild(listViewLayer);
+	
 
-    //// position the sprite on the center of the screen
-    //sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-
-    //// add the sprite as a child to this layer
-    //this->addChild(sprite, 0);
-	////»ñÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓĞÎÄ¼ş  
-	getFiles(getApplicationPath(), files);
-
-	char str[30];
-	int size = files.size();
-	for (int i = 0; i < size; i++)
-	{
-		cout << files[i].c_str() << endl;
-		//CCLOG("===============================%s",files[i].c_str());
-		std::string ext = FileUtils::getInstance()->getFileExtension(files[i].c_str()); //»ñÈ¡ÎÄ¼şºó×º
-		if (ext ==".c3b")
-		{
-			CCLOG("c3b:%s", files[i].c_str());
-
-		}
+	TableView* tableView = TableView::create(this, listViewLayer->getContentSize());
+	tableView->setDirection(ScrollView::Direction::VERTICAL);
+	tableView->setPosition(Vec2(0, 0));
+	tableView->setDelegate(this);
+	tableView->setAnchorPoint(Vec2(0, 0));
+	listViewLayer->addChild(tableView);
+	tableView->reloadData();
 
 
-	}
-
+	//labelLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), s.width, 25);
+	////labelLayer->ignoreAnchorPointForPosition(false);
+	//labelLayer->setAnchorPoint(Vec2(0,0));
+	//labelLayer->setPosition(0,0);
+	//this->addChild(labelLayer);
     return true;
 }
+
+//è·å–exeè·¯å¾„
 std::string HelloWorld::getApplicationExePath()
 {
 	TCHAR szFileName[MAX_PATH];
@@ -140,7 +144,7 @@ std::string HelloWorld::getApplicationExePath()
 	char *applicationExePath = convertTCharToUtf8(szFileName);
 	std::string path(applicationExePath);
 	CC_SAFE_FREE(applicationExePath);
-	CCLOG("=========%s", path);
+	CCLOG("EXE PATH%s", path.c_str());
 	return path;
 }
 std::string HelloWorld::getApplicationPath()
@@ -157,7 +161,7 @@ std::string HelloWorld::getApplicationPath()
 	{
 		workdir = path.substr(0, p);
 	}
-
+	//CCLOG("getApplicationPath %s ==%s", path.c_str());
 	return workdir;
 }
 
@@ -189,7 +193,7 @@ char* HelloWorld::convertTCharToUtf8(const TCHAR* src)
 
 void HelloWorld::selectFile(Ref* pSender)
 {
-	CCLOG("SELECT");
+
 	char szFileName[MAX_PATH] = { 0 };
 	static TCHAR szFilter[] = TEXT("Text Files(*.c3b)\0*.c3b\0") \
 		TEXT("All Files(*.*)\0*.*\0\0");
@@ -198,7 +202,7 @@ void HelloWorld::selectFile(Ref* pSender)
 	openFileName.lStructSize = sizeof(OPENFILENAME);
 	openFileName.hwndOwner = NULL;
 	openFileName.hInstance = NULL;
-	openFileName.nMaxFile = MAX_PATH;  //Õâ¸ö±ØĞëÉèÖÃ£¬²»ÉèÖÃµÄ»°²»»á³öÏÖ´ò¿ªÎÄ¼ş¶Ô»°¿ò  
+	openFileName.nMaxFile = MAX_PATH;  //è¿™ä¸ªå¿…é¡»è®¾ç½®ï¼Œä¸è®¾ç½®çš„è¯ä¸ä¼šå‡ºç°æ‰“å¼€æ–‡ä»¶å¯¹è¯æ¡†  
 	openFileName.lpstrFilter = szFilter;
 	openFileName.lpstrFile = (LPWSTR)szFileName;
 	//openFileName.nFilterIndex = 1;
@@ -207,29 +211,40 @@ void HelloWorld::selectFile(Ref* pSender)
 	USES_CONVERSION;
 	std::string  str(W2A(openFileName.lpstrFile));
 	//MessageBox(str.c_str(), "File Name");
+	CCLOG("PATH ==%s", str.c_str());
 	createSpriteFormPath(str);
 	
 }
 
-//¸ù¾İ´«ÈëµÄÂ·¾¶´´½¨C3Dsprite
+//æ ¹æ®ä¼ å…¥çš„è·¯å¾„åˆ›å»ºC3Dsprite
 void HelloWorld::createSpriteFormPath(std::string str)
 {
 	layer->removeAllChildren();
-	labelLayer->removeAllChildren();
+	//labelLayer->removeAllChildren();
+	size_t pos;
+	while ((pos = str.find_first_of("/")) != std::string::npos)
+	{
+		str.replace(pos, 1, "\\");
+	}
+	CCLOG("=END PATH", str.c_str());
 
 	std::string fileName = str;
 	auto sprite = Sprite3D::create(fileName);
+	if (!sprite)
+	{
+		return;
+	}
 	auto s = Director::getInstance()->getWinSize();
-	sprite->setScale(10);
+	sprite->setScale(7);
 	sprite->setRotation3D(Vec3(0, 180, 0));
 	sprite->setPosition(layer->getContentSize().width/2, layer->getContentSize().height);
 	sprite->setAnchorPoint(Vec2(0, 1));
 	layer->addChild(sprite);
 
-	//ÏÔÊ¾µ±Ç°Ñ¡ÔñÎÄ¼şÂ·¾¶
-	label = Label::createWithSystemFont("File Path:" + str, "Arial", 24);
-	label->setAnchorPoint(Vec2(0, 0));
-	labelLayer->addChild(label);
+	//æ˜¾ç¤ºå½“å‰é€‰æ‹©æ–‡ä»¶è·¯å¾„
+	//label = Label::createWithSystemFont("File Path:" + str, "Arial", 24);
+	//label->setAnchorPoint(Vec2(0, 0));
+	//labelLayer->addChild(label);
 
 	auto animation = Animation3D::create(fileName);
 	if (animation)
@@ -252,25 +267,21 @@ void HelloWorld::createSpriteFormPath(std::string str)
 		sprite->runAction(RepeatForever::create(animate));
 	}
 }
-void HelloWorld::coutName(Ref* pSender)
-{
 
-}
 void HelloWorld::getFiles(string path, vector<string>& files)
 {
-
-	//std::string ext = FileUtils::getInstance()->getFileExtension(path); //»ñÈ¡ÎÄ¼şºó×º
-	//ÎÄ¼ş¾ä±ú  
+	//std::string ext = FileUtils::getInstance()->getFileExtension(path); //è·å–æ–‡ä»¶åç¼€
+	//æ–‡ä»¶å¥æŸ„  
 	long   hFile = 0;
-	//ÎÄ¼şĞÅÏ¢  
+	//æ–‡ä»¶ä¿¡æ¯  
 	struct _finddata_t fileinfo;
 	string p;
 	if ((hFile = _findfirst(p.assign(path).append("\\*").c_str(), &fileinfo)) != -1)
 	{
 		do
 		{
-			//Èç¹ûÊÇÄ¿Â¼,µü´úÖ®  
-			//Èç¹û²»ÊÇ,¼ÓÈëÁĞ±í  
+			//å¦‚æœæ˜¯ç›®å½•,è¿­ä»£ä¹‹  
+			//å¦‚æœä¸æ˜¯,åŠ å…¥åˆ—è¡¨  
 			if ((fileinfo.attrib &  _A_SUBDIR))
 			{
 				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
@@ -287,17 +298,97 @@ void HelloWorld::getFiles(string path, vector<string>& files)
 
 void HelloWorld::menuCloseCallback(Ref* pSender)
 {
-    //Close the cocos2d-x game scene and quit the application
-    Director::getInstance()->end();
+	//Close the cocos2d-x game scene and quit the application
+	Director::getInstance()->end();
 
-    #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
-    exit(0);
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+	exit(0);
 #endif
-    
-    /*To navigate back to native iOS screen(if present) without quitting the application  ,do not use Director::getInstance()->end() and exit(0) as given above,instead trigger a custom event created in RootViewController.mm as below*/
-    
-    //EventCustom customEndEvent("game_scene_close_event");
-    //_eventDispatcher->dispatchEvent(&customEndEvent);
-    
-    
 }
+
+
+
+//table
+void HelloWorld::tableCellTouched(TableView* table, TableViewCell* cell)
+{
+	//CCLOG("cell touched at index: %ld", static_cast<long>(cell->getIdx()));
+	CCLOG("tableCellTouched == %s", targetFiles[cell->getIdx()].c_str());
+
+	createSpriteFormPath(targetFiles[cell->getIdx()].c_str());
+}
+
+Size HelloWorld::tableCellSizeForIndex(TableView *table, ssize_t idx)
+{
+	//CCLOG("tableCellSizeForIndex IDX %s", idx);
+	//if (idx == 2) {
+	//	return Size(100, 100);
+	//}
+	return Size(60, 30);
+}
+
+TableViewCell* HelloWorld::tableCellAtIndex(TableView *table, ssize_t idx)
+{
+
+	char* save_name, *pos;
+	int name_len;
+	auto fullpathname = targetFiles[idx].c_str();
+	name_len = strlen(fullpathname);
+	pos = (char*)fullpathname + name_len;
+	while (*pos != '\\' && pos != fullpathname)
+		pos--;
+	if (pos == fullpathname)
+	{
+		save_name = (char*)fullpathname + 1;
+	}
+	name_len = name_len - (pos - fullpathname);
+	save_name = (char*)malloc(name_len + 1);
+	memcpy(save_name, pos + 1, name_len);
+	auto string = StringUtils::format("%s", save_name);
+
+	TableViewCell *cell = table->dequeueCell();
+	if (!cell) {
+		cell = new (std::nothrow) CustomTableViewCell();
+		cell->autorelease();
+		auto label = Label::createWithSystemFont(string, "Helvetica", 20.0);
+		label->setPosition(Vec2::ZERO);
+		label->setAnchorPoint(Vec2::ZERO);
+		label->setTag(123);
+		cell->addChild(label);
+	}
+	else
+	{
+		auto label = (Label*)cell->getChildByTag(123);
+		label->setString(string);
+	}
+
+
+	return cell;
+}
+void HelloWorld::reckonNum()
+{
+	char str[30];
+	int j = 0;
+	int size = files.size();
+	for (int i = 0; i < size; i++)
+	{
+		cout << files[i].c_str() << endl;
+		std::string ext = FileUtils::getInstance()->getFileExtension(files[i].c_str()); //è·å–æ–‡ä»¶åç¼€
+		std::string targetExt = ".c3b";
+		int temp = ext.compare(targetExt);
+		if (temp == 0)
+		{
+			j += 1;
+			
+			targetFiles.push_back(files[i]);
+		}
+
+	}
+	filesNum = j;
+	CCLOG("has %d .c3b files", filesNum);
+}
+ssize_t HelloWorld::numberOfCellsInTableView(TableView *table)
+{	
+	return filesNum;
+}
+
+
