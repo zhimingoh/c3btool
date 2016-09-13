@@ -23,6 +23,11 @@ vector<string> files;
 vector < string> targetFiles;
 int filesNum;
 
+//Billboard
+//Camera3D
+//Sprite3D(getAttachNode、getMeshByName)
+//Mesh
+
 Scene* HelloWorld::createScene()
 {
     // 'scene' is an autorelease object
@@ -65,22 +70,22 @@ bool HelloWorld::init()
                                 origin.y + closeItem->getContentSize().height/2));
 
     // create menu, it's an autorelease object
-    auto menu = Menu::create(closeItem, NULL);
-    menu->setPosition(Vec2::ZERO);
-    this->addChild(menu, 1);
+ //   auto menu = Menu::create(closeItem, NULL);
+ //   menu->setPosition(Vec2::ZERO);
+ //   this->addChild(menu, 1);
 
 
-	auto closeItem2 = MenuItemImage::create(
-		"CloseNormal.png",
-		"CloseSelected.png",
-		CC_CALLBACK_1(HelloWorld::selectFile, this));
+	//auto closeItem2 = MenuItemImage::create(
+	//	"CloseNormal.png",
+	//	"CloseSelected.png",
+	//	CC_CALLBACK_1(HelloWorld::selectFile, this));
 
-	closeItem2->setPosition(Vec2(50, 50));
+	//closeItem2->setPosition(Vec2(50, 50));
 
-	// create menu, it's an autorelease object
-	auto menu2= Menu::create(closeItem2, NULL);
-	menu2->setPosition(Vec2::ONE);
-	this->addChild(menu2, 1);
+	//// create menu, it's an autorelease object
+	//auto menu2= Menu::create(closeItem2, NULL);
+	//menu2->setPosition(Vec2::ONE);
+	//this->addChild(menu2, 1);
 
     /////////////////////////////
     // 3. add your codes below...
@@ -132,6 +137,14 @@ bool HelloWorld::init()
 	//labelLayer->setAnchorPoint(Vec2(0,0));
 	//labelLayer->setPosition(0,0);
 	//this->addChild(labelLayer);
+
+	//_camControlNode = Node::create();
+	//_camControlNode->setNormalizedPosition(Vec2(.5, .5));
+	//addChild(_camControlNode);
+
+	//_camNode = Node::create();
+	//_camNode->setPositionZ(Camera::getDefaultCamera()->getPosition3D().z);
+	//_camControlNode->addChild(_camNode);
     return true;
 }
 
@@ -161,7 +174,9 @@ std::string HelloWorld::getApplicationPath()
 	{
 		workdir = path.substr(0, p);
 	}
-	//CCLOG("getApplicationPath %s ==%s", path.c_str());
+	CCLOG("getApplicationPath %s", workdir.c_str());
+	workdir += "\\res";
+	CCLOG("workdir %s", workdir.c_str());
 	return workdir;
 }
 

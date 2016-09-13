@@ -7,9 +7,7 @@
 
 #include <iostream>
 #include <stdio.h>
-//string是c++ 的头文件，其内包含了一个string类，string s1就是建立一个string类的对象 
 #include <string>
-//cstring.h 是对应于旧C 头文件的std 版本
 #include <cstringt.h>
 #include <locale>
 
@@ -46,7 +44,10 @@ private:
 	int _animateQuality;
 	std::vector<cocos2d::Sprite3D*> sprite;
 
-    
+//protected:
+//	cocos2d::Node* _camControlNode;
+//	cocos2d::Node* _camNode;
+//	cocos2d::EventListenerTouchOneByOne* _lis;
     // implement the "static create()" method manually
 };
 
