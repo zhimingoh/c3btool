@@ -22,6 +22,7 @@ char * filePath = "G:";
 vector<string> files;
 vector < string> targetFiles;
 int filesNum;
+bool initStatu = false;
 
 //Billboard
 //Camera3D
@@ -40,7 +41,10 @@ Scene* HelloWorld::createScene()
     scene->addChild(layer);
 
     // return the scene
-    return scene;
+	auto director = Director::getInstance();
+
+	return scene;
+
 }
 
 // on "init" you need to initialize your instance
@@ -78,7 +82,7 @@ bool HelloWorld::init()
 	//auto closeItem2 = MenuItemImage::create(
 	//	"CloseNormal.png",
 	//	"CloseSelected.png",
-	//	CC_CALLBACK_1(HelloWorld::selectFile, this));
+	//	CC_CALLBACK_1(HelloWorld::initCamera, this));
 
 	//closeItem2->setPosition(Vec2(50, 50));
 
@@ -93,7 +97,7 @@ bool HelloWorld::init()
     // add a label shows "Hello World"
     // create and initialize a label
     
-    auto label = Label::createWithTTF("Hello World", "fonts/Marker Felt.ttf", 24);
+    auto label = Label::createWithTTF("Select a file on the right", "fonts/Marker Felt.ttf", 24);
     
     // position the label on the center of the screen
     label->setPosition(Vec2(origin.x + visibleSize.width/2,
@@ -132,22 +136,87 @@ bool HelloWorld::init()
 	tableView->reloadData();
 
 
-	//labelLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), s.width, 25);
-	////labelLayer->ignoreAnchorPointForPosition(false);
-	//labelLayer->setAnchorPoint(Vec2(0,0));
-	//labelLayer->setPosition(0,0);
-	//this->addChild(labelLayer);
+	labelLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), s.width, 25);
+	//labelLayer->ignoreAnchorPointForPosition(false);
+	labelLayer->setAnchorPoint(Vec2(0,0));
+	labelLayer->setPosition(0,0);
+	this->addChild(labelLayer);
+	CCLOG("targetFilesOne %s", targetFiles[0].c_str());
+	//如果目录不为空则默认显示第一个C3B文件
+	/*if (!targetFiles[0].empty())
+	{
+		createSpriteFormPath(targetFiles[0]);
+	}*/
 
-	//_camControlNode = Node::create();
-	//_camControlNode->setNormalizedPosition(Vec2(.5, .5));
-	//addChild(_camControlNode);
-
-	//_camNode = Node::create();
-	//_camNode->setPositionZ(Camera::getDefaultCamera()->getPosition3D().z);
-	//_camControlNode->addChild(_camNode);
     return true;
 }
+//void HelloWorld::onEnter()
+//{
+//
+//	//initCamera();
+//
+//}
+//void HelloWorld::onEnterTransitionDidFinish()
+//{
+//
+//}
+void HelloWorld::initCamera(){
+	CCLOG("getDefaultCamera %d", Camera::getDefaultCamera()->getPosition3D().z);
+	if (initStatu)
+	{
+		CCLOG("-=-=-=");
+		return;
+	}
+	_camControlNode = Node::create();
+	_camControlNode->setNormalizedPosition(Vec2(.5, .5));
+	this->addChild(_camControlNode);
+	CCLOG("=============initCamera========");
 
+	_camNode = Node::create();
+	_camNode->setPositionZ(Camera::getDefaultCamera()->getPosition3D().z);
+	_camControlNode->addChild(_camNode);
+
+
+	//auto sp3d = Sprite3D::create();
+	//sp3d->setPosition(s.width / 2, s.height / 2);
+	//addChild(sp3d);
+	////Billboards
+	////Yellow is at the back
+	//bill1 = BillBoard::create("Images/Icon.png");
+	//bill1->setPosition3D(Vec3(50, 10, -10));
+	//bill1->setColor(Color3B::YELLOW);
+	//bill1->setScale(0.6f);
+	//sp3d->addChild(bill1);
+
+
+	//Listener
+	_lis = EventListenerTouchOneByOne::create();
+	_lis->onTouchBegan = [this](Touch* t, Event* e) {
+		return true;
+	};
+
+	_lis->onTouchMoved = [this](Touch* t, Event* e) {
+		float dx = t->getDelta().x;
+		Vec3 rot = _camControlNode->getRotation3D();
+		rot.y += dx;
+		_camControlNode->setRotation3D(rot);
+
+		Vec3 worldPos;
+		_camNode->getNodeToWorldTransform().getTranslation(&worldPos);
+
+		Camera::getDefaultCamera()->setPosition3D(worldPos);
+		Camera::getDefaultCamera()->lookAt(_camControlNode->getPosition3D());
+	};
+
+	Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(_lis, layer);
+
+	schedule(schedule_selector(HelloWorld::update));
+	initStatu = true;//已经初始化改变状态
+
+}
+void HelloWorld::update(float dt)
+{
+}
 //获取exe路径
 std::string HelloWorld::getApplicationExePath()
 {
@@ -264,6 +333,7 @@ void HelloWorld::createSpriteFormPath(std::string str)
 	auto animation = Animation3D::create(fileName);
 	if (animation)
 	{
+		CCLOG("=============animation========");
 		auto animate = Animate3D::create(animation);
 		bool inverse = (std::rand() % 3 == 0);
 
@@ -330,6 +400,7 @@ void HelloWorld::tableCellTouched(TableView* table, TableViewCell* cell)
 	CCLOG("tableCellTouched == %s", targetFiles[cell->getIdx()].c_str());
 
 	createSpriteFormPath(targetFiles[cell->getIdx()].c_str());
+	initCamera();
 }
 
 Size HelloWorld::tableCellSizeForIndex(TableView *table, ssize_t idx)
@@ -341,6 +412,7 @@ Size HelloWorld::tableCellSizeForIndex(TableView *table, ssize_t idx)
 	return Size(60, 30);
 }
 
+//创建每一项tablecell
 TableViewCell* HelloWorld::tableCellAtIndex(TableView *table, ssize_t idx)
 {
 
@@ -379,6 +451,7 @@ TableViewCell* HelloWorld::tableCellAtIndex(TableView *table, ssize_t idx)
 
 	return cell;
 }
+//计算c3b总数
 void HelloWorld::reckonNum()
 {
 	char str[30];

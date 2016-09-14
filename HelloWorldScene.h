@@ -19,7 +19,8 @@ public:
 
     static cocos2d::Scene* createScene();
     virtual bool init();
-    
+
+
     // a selector callback
     void menuCloseCallback(cocos2d::Ref* pSender);
 	void selectFile(cocos2d::Ref* pSender);
@@ -31,6 +32,10 @@ public:
 	std::string HelloWorld::getApplicationPath();
 	char g_szFileName[MAX_PATH];
 	void HelloWorld::reckonNum();
+	 void initCamera();
+	 //void onEnter();
+	 //void onEnterTransitionDidFinish();
+	 //void onTouchesMoved(const std::vector<Touch*>& touches, cocos2d::Event  *event);
 
 	virtual void scrollViewDidScroll(cocos2d::extension::ScrollView* view)override {};
 	virtual void scrollViewDidZoom(cocos2d::extension::ScrollView* view)override {}
@@ -39,16 +44,21 @@ public:
 	virtual cocos2d::extension::TableViewCell* tableCellAtIndex(cocos2d::extension::TableView *table, ssize_t idx)override;
 	virtual ssize_t numberOfCellsInTableView(cocos2d::extension::TableView *table)override;
 
+	virtual void update(float dt) override;
+
 private:
 	std::vector<cocos2d::Sprite3D*> _sprits;
 	int _animateQuality;
 	std::vector<cocos2d::Sprite3D*> sprite;
 
-//protected:
-//	cocos2d::Node* _camControlNode;
-//	cocos2d::Node* _camNode;
-//	cocos2d::EventListenerTouchOneByOne* _lis;
-    // implement the "static create()" method manually
+protected:
+	cocos2d::Node* _camControlNode;
+	cocos2d::Node* _camNode;
+	cocos2d::EventListenerTouchOneByOne* _lis;
+	cocos2d::BillBoard* bill1;
+	cocos2d::Camera *_camera;
+
+     //implement the "static create()" method manually
 };
 
 #endif // __HELLOWORLD_SCENE_H__
