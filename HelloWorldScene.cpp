@@ -135,31 +135,44 @@ bool HelloWorld::init()
 	listViewLayer->addChild(tableView);
 	tableView->reloadData();
 
-
-	labelLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), s.width, 25);
-	//labelLayer->ignoreAnchorPointForPosition(false);
-	labelLayer->setAnchorPoint(Vec2(0,0));
-	labelLayer->setPosition(0,0);
-	this->addChild(labelLayer);
-	CCLOG("targetFilesOne %s", targetFiles[0].c_str());
+	//auto sp3d = Sprite3D::create();
+	//sp3d->setPosition(s.width,0);
+	//addChild(sp3d);
+	////Billboards
+	////Yellow is at the back
+	//bill1 = BillBoard::create("Images/Icon.png");
+	//bill1->setPosition3D(Vec3(50, 10, -10));
+	//bill1->setColor(Color3B::YELLOW);
+	//bill1->setScale(0.6f);
+	//sp3d->addChild(bill1);
 	//如果目录不为空则默认显示第一个C3B文件
-	/*if (!targetFiles[0].empty())
+	if (!targetFiles.empty())
 	{
 		createSpriteFormPath(targetFiles[0]);
-	}*/
+	}
 
     return true;
 }
-//void HelloWorld::onEnter()
-//{
-//
-//	//initCamera();
-//
-//}
+
+//每次当Node进入“stage”时才调用事件回调。 如果Node进入“stage”状态时伴随着一个转换（transition）, 那么事件将会在这个转换开始的时候被调用。
+//在onEnter过程中，你不能够接入“sister / brother”兄妹节点。
+//如果你重写了onEnter方法，你应该调用它的父类，e.g., Node::onEnter().
+void HelloWorld::onEnter()
+{
+	Node::onEnter();
+	initCamera();
+
+}
+void HelloWorld::onExit()
+{
+	Node::onExit();
+
+}
 //void HelloWorld::onEnterTransitionDidFinish()
 //{
 //
 //}
+// 摄像机事件
 void HelloWorld::initCamera(){
 	CCLOG("getDefaultCamera %d", Camera::getDefaultCamera()->getPosition3D().z);
 	if (initStatu)
@@ -175,18 +188,6 @@ void HelloWorld::initCamera(){
 	_camNode = Node::create();
 	_camNode->setPositionZ(Camera::getDefaultCamera()->getPosition3D().z);
 	_camControlNode->addChild(_camNode);
-
-
-	//auto sp3d = Sprite3D::create();
-	//sp3d->setPosition(s.width / 2, s.height / 2);
-	//addChild(sp3d);
-	////Billboards
-	////Yellow is at the back
-	//bill1 = BillBoard::create("Images/Icon.png");
-	//bill1->setPosition3D(Vec3(50, 10, -10));
-	//bill1->setColor(Color3B::YELLOW);
-	//bill1->setScale(0.6f);
-	//sp3d->addChild(bill1);
 
 
 	//Listener
@@ -303,6 +304,10 @@ void HelloWorld::selectFile(Ref* pSender)
 //根据传入的路径创建C3Dsprite
 void HelloWorld::createSpriteFormPath(std::string str)
 {
+	if (str.length() == 0)
+	{
+		return;
+	}
 	layer->removeAllChildren();
 	//labelLayer->removeAllChildren();
 	size_t pos;
@@ -400,7 +405,7 @@ void HelloWorld::tableCellTouched(TableView* table, TableViewCell* cell)
 	CCLOG("tableCellTouched == %s", targetFiles[cell->getIdx()].c_str());
 
 	createSpriteFormPath(targetFiles[cell->getIdx()].c_str());
-	initCamera();
+	//initCamera();
 }
 
 Size HelloWorld::tableCellSizeForIndex(TableView *table, ssize_t idx)

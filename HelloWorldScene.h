@@ -33,7 +33,8 @@ public:
 	char g_szFileName[MAX_PATH];
 	void HelloWorld::reckonNum();
 	 void initCamera();
-	 //void onEnter();
+	 void onEnter();
+	 void onExit();
 	 //void onEnterTransitionDidFinish();
 	 //void onTouchesMoved(const std::vector<Touch*>& touches, cocos2d::Event  *event);
 
