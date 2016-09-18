@@ -10,7 +10,6 @@ USING_NS_CC_EXT;
 #include<string>
 #include<io.h>
 #include "CustomTableViewCell.h"
-
 using namespace std;
 
 CCLayer *layer;
@@ -154,9 +153,8 @@ bool HelloWorld::init()
     return true;
 }
 
-//每次当Node进入“stage”时才调用事件回调。 如果Node进入“stage”状态时伴随着一个转换（transition）, 那么事件将会在这个转换开始的时候被调用。
-//在onEnter过程中，你不能够接入“sister / brother”兄妹节点。
-//如果你重写了onEnter方法，你应该调用它的父类，e.g., Node::onEnter().
+
+//如果你重写了onEnter方法，你应该调用它的父类
 void HelloWorld::onEnter()
 {
 	Node::onEnter();
@@ -183,7 +181,6 @@ void HelloWorld::initCamera(){
 	_camControlNode = Node::create();
 	_camControlNode->setNormalizedPosition(Vec2(.5, .5));
 	this->addChild(_camControlNode);
-	CCLOG("=============initCamera========");
 
 	_camNode = Node::create();
 	_camNode->setPositionZ(Camera::getDefaultCamera()->getPosition3D().z);
@@ -356,6 +353,17 @@ void HelloWorld::createSpriteFormPath(std::string str)
 
 		sprite->runAction(RepeatForever::create(animate));
 	}
+
+	//灯光
+	auto _directionalLight = DirectionLight::create(Vec3(1.0f, -1.0f, 0.0f), Color3B(255, 255, 0));
+
+	_directionalLight->retain();
+
+	_directionalLight->setEnabled(true);
+
+	addChild(_directionalLight);
+
+	//_directionalLight->setCameraMask(2);
 }
 
 void HelloWorld::getFiles(string path, vector<string>& files)
