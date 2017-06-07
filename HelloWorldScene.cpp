@@ -1,6 +1,7 @@
 ﻿#include "HelloWorldScene.h"
 #include "SimpleAudioEngine.h"
 #include <tchar.h>
+#include "iconv.h"
 
 USING_NS_CC;
 USING_NS_CC_EXT;
@@ -9,12 +10,23 @@ USING_NS_CC_EXT;
 #include <atlconv.h>
 #include<string>
 #include<io.h>
-#include "CustomTableViewCell.h"
+#include <fstream>
 using namespace std;
+#include "CustomTableViewCell.h"
+#define FONT_NAME     "fonts/Thonburi.ttf"
+#define FONT_SIZE    20
 
 CCLayer *layer;
-CCLayer *labelLayer;
+CCLayer *buttonLayer;
 CCLayer *listViewLayer;
+PUParticleSystem3D *sprite;
+Sprite *uiSprite;
+Sprite* selectjpg1;
+Sprite* selectjpg2;
+Sprite* selectjpg3;
+
+cocos2d::Node*  _trackNode;
+cocos2d::Vec2  _beginPos;
 
 Label* label;
 char * filePath = "G:";
@@ -22,11 +34,16 @@ vector<string> files;
 vector < string> targetFiles;
 int filesNum;
 bool initStatu = false;
+bool rotaStatu = true;
+bool moveStatu = false;
+bool actionStatu = true;
+bool cameraStatu = false;
+Sprite3D* createx(Layer* roleLayer, int i);
+std::string a2u(const char *inbuf);
+EventListenerTouchAllAtOnce* listener;
+EventListenerTouchOneByOne* listener2;
 
-//Billboard
-//Camera3D
-//Sprite3D(getAttachNode、getMeshByName)
-//Mesh
+
 
 Scene* HelloWorld::createScene()
 {
@@ -45,67 +62,147 @@ Scene* HelloWorld::createScene()
 	return scene;
 
 }
-
 // on "init" you need to initialize your instance
 bool HelloWorld::init()
 {
-    //////////////////////////////
-    // 1. super init first
     if ( !Layer::init() )
     {
         return false;
     }
-    
+	_angleX = 0.0f;
+	_angleY = 0.0f;
+	sprite = nullptr;
+	FileUtils::getInstance()->addSearchPath("Particle3D/materials");
+	FileUtils::getInstance()->addSearchPath("Particle3D/scripts");
+	FileUtils::getInstance()->addSearchPath("res");
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
-    /////////////////////////////
-    // 2. add a menu item with "X" image, which is clicked to quit the program
-    //    you may modify it.
+	auto  oneScaleBtn = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_1(HelloWorld::changeScale, this, 1));
+	oneScaleBtn->setPosition(Vec2(0, 0));
+	
+	auto button_label01 = Label::createWithSystemFont(a2u("1x"), "Arial", 30);
+	button_label01->setPosition(Point(oneScaleBtn->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	oneScaleBtn->addChild(button_label01, 2);
 
-    // add a "close" icon to exit the progress. it's an autorelease object
-    auto closeItem = MenuItemImage::create(
-                                           "CloseNormal.png",
-                                           "CloseSelected.png",
-										   CC_CALLBACK_1(HelloWorld::selectFile, this));
-    
-    closeItem->setPosition(Vec2(origin.x + visibleSize.width - closeItem->getContentSize().width/2 ,
-                                origin.y + closeItem->getContentSize().height/2));
+	auto  twoScaleBtn = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_1(HelloWorld::changeScale, this, 2));
+	twoScaleBtn->setPosition(Vec2(0, -100));
 
-    // create menu, it's an autorelease object
- //   auto menu = Menu::create(closeItem, NULL);
- //   menu->setPosition(Vec2::ZERO);
- //   this->addChild(menu, 1);
+	 button_label01 = Label::createWithSystemFont(a2u("放大2x"), "Arial", 30);
+	 button_label01->setPosition(Point(twoScaleBtn->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	twoScaleBtn->addChild(button_label01, 2);
+
+	auto  threeScaleBtn = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_1(HelloWorld::changeScale, this, 5));
+	threeScaleBtn->setPosition(Vec2(0, -200));
+
+	button_label01 = Label::createWithSystemFont(a2u("放大5x"), "Arial", 30);
+	button_label01->setPosition(Point(threeScaleBtn->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	threeScaleBtn->addChild(button_label01, 2);
+
+	auto rotaBtn1 = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_1(HelloWorld::changeRota, this, true));
+	rotaBtn1->setPosition(Vec2(0, -300));
+
+	button_label01 = Label::createWithSystemFont(a2u("任意旋转"), "Arial", 30);
+	button_label01->setPosition(Point(rotaBtn1->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	rotaBtn1->addChild(button_label01, 2);
+	selectjpg1 = Sprite::create("1.png");
+	selectjpg1->setScale(0.5f);
+	selectjpg1->setPosition(Vec2(200, 35));
+	rotaBtn1->addChild(selectjpg1, 2);
+
+	auto rotaBtn2 = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_1(HelloWorld::changeRota, this, false));
+	rotaBtn2->setPosition(Vec2(0, -400));
+	button_label01 = Label::createWithSystemFont(a2u("左右旋转"), "Arial", 30);
+	button_label01->setPosition(Point(rotaBtn2->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	rotaBtn2->addChild(button_label01, 2);
+	selectjpg2 = Sprite::create("1.png");
+	selectjpg2->setScale(0.5f);
+	selectjpg2->setPosition(Vec2(200, 35));
+	selectjpg2->setVisible(false);
+	rotaBtn2->addChild(selectjpg2, 2);
+
+	auto moveBtn = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_0(HelloWorld::changeTouchEvent, this));
+	moveBtn->setPosition(Vec2(0, -300));
+	button_label01 = Label::createWithSystemFont(a2u("移动"), "Arial", 30);
+	button_label01->setPosition(Point(moveBtn->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	moveBtn->addChild(button_label01, 2);
+	selectjpg3 = Sprite::create("1.png");
+	selectjpg3->setScale(0.5f);
+	selectjpg3->setPosition(Vec2(200, 35));
+	selectjpg3->setVisible(false);
+	moveBtn->addChild(selectjpg3, 2);
 
 
-	//auto closeItem2 = MenuItemImage::create(
-	//	"CloseNormal.png",
-	//	"CloseSelected.png",
-	//	CC_CALLBACK_1(HelloWorld::initCamera, this));
+	auto pauseBtn = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_0(HelloWorld::pauseAction, this));
+	pauseBtn->setPosition(Vec2(0, -600));
 
-	//closeItem2->setPosition(Vec2(50, 50));
+	button_label01 = Label::createWithSystemFont(a2u("暂停/恢复"), "Arial", 30);
+	button_label01->setPosition(Point(pauseBtn->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	pauseBtn->addChild(button_label01, 2);
 
-	//// create menu, it's an autorelease object
-	//auto menu2= Menu::create(closeItem2, NULL);
-	//menu2->setPosition(Vec2::ONE);
-	//this->addChild(menu2, 1);
+	auto selectBtn = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_0(HelloWorld::selectFile, this));
+	selectBtn->setPosition(Vec2(0, -400));
 
-    /////////////////////////////
-    // 3. add your codes below...
+	button_label01 = Label::createWithSystemFont(a2u("选择背景图"), "Arial", 30);
+	button_label01->setPosition(Point(selectBtn->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	selectBtn->addChild(button_label01, 2);
 
-    // add a label shows "Hello World"
-    // create and initialize a label
-    
-    auto label = Label::createWithTTF("Select a file on the right", "fonts/Marker Felt.ttf", 24);
-    
-    // position the label on the center of the screen
-    label->setPosition(Vec2(origin.x + visibleSize.width/2,
-                            origin.y + visibleSize.height - label->getContentSize().height));
 
-    // add the label as a child to this layer
-    this->addChild(label, 1);
+	auto changeCameraBtn = MenuItemImage::create(
+		"animationbuttonnormal.png",
+		"animationbuttonpressed.png",
+		CC_CALLBACK_0(HelloWorld::changeCamera, this));
+	changeCameraBtn->setPosition(Vec2(0, -500));
 
-	////获取该路径下的所有文件  
+	button_label01 = Label::createWithSystemFont(a2u("切换摄像机"), "Arial", 30);
+	button_label01->setPosition(Point(changeCameraBtn->getContentSize().width / 2, 40));
+	button_label01->setAnchorPoint(Vec2(0.5, 0.5));
+	changeCameraBtn->addChild(button_label01, 2);
+
+	label = Label::create();
+	label->setColor(Color3B::MAGENTA);
+	label->setPosition(250, 35);
+	changeCameraBtn->addChild(label, 2);
+	label->setString(a2u("正交"));
+	label->setSystemFontSize(35.0f);
+	auto menu = Menu::create(oneScaleBtn, twoScaleBtn, threeScaleBtn, moveBtn, selectBtn, changeCameraBtn, NULL);
+	menu->setScale(0.5);
+	menu->setPosition(Vec2(-221,440));
+	this->addChild(menu, 1);
+
+	//获取该路径下的所有文件  
 	getFiles(getApplicationPath(), files);
 	reckonNum();
 
@@ -118,14 +215,13 @@ bool HelloWorld::init()
 	this->addChild(layer);
 
 	
-	listViewLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), s.width, 25);
+	listViewLayer = CCLayerColor::create(ccc4(0xff, 0x00, 0x00, 0x80), 200, 200);
 	listViewLayer->setContentSize(Size(150, s.height));
 	listViewLayer->ignoreAnchorPointForPosition(false);
 	listViewLayer->setAnchorPoint(Vec2(1,0));
 	listViewLayer->setPosition(s.width, 0);
 	this->addChild(listViewLayer);
 	
-
 	TableView* tableView = TableView::create(this, listViewLayer->getContentSize());
 	tableView->setDirection(ScrollView::Direction::VERTICAL);
 	tableView->setPosition(Vec2(0, 0));
@@ -134,79 +230,108 @@ bool HelloWorld::init()
 	listViewLayer->addChild(tableView);
 	tableView->reloadData();
 
-	//auto sp3d = Sprite3D::create();
-	//sp3d->setPosition(s.width,0);
-	//addChild(sp3d);
-	////Billboards
-	////Yellow is at the back
-	//bill1 = BillBoard::create("Images/Icon.png");
-	//bill1->setPosition3D(Vec3(50, 10, -10));
-	//bill1->setColor(Color3B::YELLOW);
-	//bill1->setScale(0.6f);
-	//sp3d->addChild(bill1);
-	//如果目录不为空则默认显示第一个C3B文件
-	if (!targetFiles.empty())
-	{
-		createSpriteFormPath(targetFiles[0]);
-	}
+	uiSprite = Sprite::create("BattleScene.png");
+	uiSprite->setPosition3D(Vec3(s.width / 2, s.height / 2, 0));
+	uiSprite->setAnchorPoint(Vec2(0, 0));
+	addChild(uiSprite);
+	uiSprite->setGlobalZOrder(-1);
+	uiSprite->setCameraMask(2);
+
+	 listener = EventListenerTouchAllAtOnce::create();
+	listener->onTouchesMoved = CC_CALLBACK_2(HelloWorld::onTouchesMoved, this);
+	listener->onTouchesEnded = CC_CALLBACK_2(HelloWorld::onTouchesEnded, this);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+
+
+	auto pTextField = TextFieldTTF::textFieldWithPlaceHolder("Scale",
+		FONT_NAME,
+		FONT_SIZE);
+	this->addChild(pTextField);
+	pTextField->setPosition(Vec2(67,300));
+	pTextField->setColor(Color3B::WHITE);
+	pTextField->setAnchorPoint(Vec2(1, 0));
+	_trackNode = pTextField;
+
+	auto lister3 = EventListenerTouchOneByOne::create();
+	lister3->onTouchBegan = CC_CALLBACK_2(HelloWorld::onTouchBegan, this);
+	lister3->onTouchEnded = CC_CALLBACK_2(HelloWorld::onTouchEnded, this);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(lister3, pTextField);
+
 
     return true;
 }
 
+Sprite3D* createx(Layer* roleLayer, int i)
+{
+	Sprite3D* _hero1 = Sprite3D::create("1001_0_01.c3b");
+	_hero1->setRotation3D(Vec3(0, 0, 0));
+	roleLayer->addChild(_hero1);
+
+	Sprite3D* weapon = Sprite3D::create("weapon_01_01b.c3b");
+	//weapon->setCameraMask(2);
+	_hero1->getAttachNode("rhandnode")->addChild(weapon);
+
+	weapon->setTag(2);
+	auto mrole2 = weapon->getNodeToParentTransform();
+	mrole2.rotateX(CC_DEGREES_TO_RADIANS(-180));
+	weapon->setNodeToParentTransform(mrole2);
+
+	Sprite3D* hair = Sprite3D::create("1001_1_01.c3b");
+	//hair->setRotation3D(Vec3(-90, 0, 0));	
+	_hero1->getAttachNode("headnode")->addChild(hair);
+	hair->setTag(1);
+	auto mrole = hair->getNodeToParentTransform();
+	mrole.rotateX(CC_DEGREES_TO_RADIANS(-180));
+	hair->setNodeToParentTransform(mrole);
+	auto label = Label::createWithTTF(to_string(i), "fonts/Marker Felt.ttf", 24);
+	label->setColor(Color3B::MAGENTA);
+	label->setPosition(0, -20);
+
+	auto animation = Animation3D::create("1001_0_01.c3b");
+	Animate3D* heroAnimate = Animate3D::createWithFrames(animation, 180, 204);
+	_hero1->runAction(RepeatForever::create(heroAnimate));
+
+	auto bill1 = BillBoard::create(BillBoard::Mode::VIEW_PLANE_ORIENTED);
+	bill1->setColor(Color3B::YELLOW);
+	bill1->setScale(0.6f);
+	bill1->addChild(label);
+	_hero1->addChild(bill1);
+	return _hero1;
+}
 
 //如果你重写了onEnter方法，你应该调用它的父类
 void HelloWorld::onEnter()
 {
 	Node::onEnter();
 	initCamera();
-
 }
 void HelloWorld::onExit()
 {
 	Node::onExit();
 
 }
-//void HelloWorld::onEnterTransitionDidFinish()
-//{
-//
-//}
-// 摄像机事件
+
 void HelloWorld::initCamera(){
-	CCLOG("getDefaultCamera %d", Camera::getDefaultCamera()->getPosition3D().z);
 	if (initStatu)
 	{
-		CCLOG("-=-=-=");
 		return;
 	}
-	_camControlNode = Node::create();
-	_camControlNode->setNormalizedPosition(Vec2(.5, .5));
-	this->addChild(_camControlNode);
 
-	_camNode = Node::create();
-	_camNode->setPositionZ(Camera::getDefaultCamera()->getPosition3D().z);
-	_camControlNode->addChild(_camNode);
+	Size visibleSize = Director::getInstance()->getVisibleSize();
+	Vec2 origin = Director::getInstance()->getVisibleOrigin();
+	auto size = Director::getInstance()->getWinSize();
 
+	//人物摄像机
+	_camera = Camera::createOrthographic(size.width, size.height, -1024, 1024);
+	_camera->setCameraFlag(CameraFlag::USER1);
+	_camera->setPosition3D(Vec3(size.width / 2, size.height/2, Director::getInstance()->getZEye()));
+	this->addChild(_camera);
 
-	//Listener
-	_lis = EventListenerTouchOneByOne::create();
-	_lis->onTouchBegan = [this](Touch* t, Event* e) {
-		return true;
-	};
-
-	_lis->onTouchMoved = [this](Touch* t, Event* e) {
-		float dx = t->getDelta().x;
-		Vec3 rot = _camControlNode->getRotation3D();
-		rot.y += dx;
-		_camControlNode->setRotation3D(rot);
-
-		Vec3 worldPos;
-		_camNode->getNodeToWorldTransform().getTranslation(&worldPos);
-
-		Camera::getDefaultCamera()->setPosition3D(worldPos);
-		Camera::getDefaultCamera()->lookAt(_camControlNode->getPosition3D());
-	};
-
-	Director::getInstance()->getEventDispatcher()->addEventListenerWithSceneGraphPriority(_lis, layer);
+	_camera2 = Camera::createPerspective(60, (GLfloat)size.width / size.height, 1, 1024);
+	_camera2->setCameraFlag(CameraFlag::USER2);
+	_camera2->setPosition3D(Vec3(size.width / 2, size.height / 2, Director::getInstance()->getZEye()));
+	_camera2->retain();
+	this->addChild(_camera2);
 
 	schedule(schedule_selector(HelloWorld::update));
 	initStatu = true;//已经初始化改变状态
@@ -241,9 +366,9 @@ std::string HelloWorld::getApplicationPath()
 	{
 		workdir = path.substr(0, p);
 	}
-	CCLOG("getApplicationPath %s", workdir.c_str());
+	//CCLOG("getApplicationPath %s", workdir.c_str());
 	workdir += "\\res";
-	CCLOG("workdir %s", workdir.c_str());
+	//CCLOG("workdir %s", workdir.c_str());
 	return workdir;
 }
 
@@ -273,31 +398,69 @@ char* HelloWorld::convertTCharToUtf8(const TCHAR* src)
 #endif
 }
 
-void HelloWorld::selectFile(Ref* pSender)
+void HelloWorld::selectFile()
 {
 
 	char szFileName[MAX_PATH] = { 0 };
-	static TCHAR szFilter[] = TEXT("Text Files(*.c3b)\0*.c3b\0") \
+	static TCHAR szFilter[] = TEXT("Text Files(*.png)\0*.png\0") \
+		TEXT("Text Files(*.jpg)\0*.jpg\0") \
 		TEXT("All Files(*.*)\0*.*\0\0");
 
 	OPENFILENAME openFileName = { 0 };
-	openFileName.lStructSize = sizeof(OPENFILENAME);
+	openFileName.lStructSize = sizeof(OPENFILENAME);	
 	openFileName.hwndOwner = NULL;
 	openFileName.hInstance = NULL;
 	openFileName.nMaxFile = MAX_PATH;  //这个必须设置，不设置的话不会出现打开文件对话框  
 	openFileName.lpstrFilter = szFilter;
 	openFileName.lpstrFile = (LPWSTR)szFileName;
-	//openFileName.nFilterIndex = 1;
-	//openFileName.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 	::GetOpenFileName(&openFileName);
 	USES_CONVERSION;
 	std::string  str(W2A(openFileName.lpstrFile));
-	//MessageBox(str.c_str(), "File Name");
-	CCLOG("PATH ==%s", str.c_str());
-	createSpriteFormPath(str);
-	
+	//CCLOG("PATH ==%s", str.c_str());
+	changeBG(str);
 }
 
+void HelloWorld::changeBG(std::string str)
+{
+	if (uiSprite)
+	{
+		uiSprite->removeFromParent();
+		uiSprite = nullptr;
+	}
+	if (str.length() == 0)
+	{
+		return;
+	}
+	uiSprite = Sprite::create(str);
+	CCSize s = CCDirector::sharedDirector()->getWinSize();
+	uiSprite->setPosition3D(Vec3(s.width / 2, s.height / 2, 0));
+	uiSprite->setAnchorPoint(Vec2(0, 0));
+	this->addChild(uiSprite);
+	uiSprite->setGlobalZOrder(-1);
+	uiSprite->setCameraMask(2);
+
+}
+void HelloWorld::changeCamera()
+{
+	if (sprite)
+	{
+		if (cameraStatu)
+		{
+			sprite->setCameraMask(2);
+			auto s = Director::getInstance()->getWinSize();
+			sprite->setPosition3D(Vec3(s.width / 2, s.height / 2, 0));
+			cameraStatu = false;
+			label->setString(a2u("正交"));
+		}
+		else
+		{
+			sprite->setCameraMask(4);
+			sprite->setPosition3D(Vec3(100, 50, 0));
+			cameraStatu = true;
+			label->setString(a2u("透视"));
+		}
+	}
+}
 //根据传入的路径创建C3Dsprite
 void HelloWorld::createSpriteFormPath(std::string str)
 {
@@ -306,64 +469,46 @@ void HelloWorld::createSpriteFormPath(std::string str)
 		return;
 	}
 	layer->removeAllChildren();
-	//labelLayer->removeAllChildren();
+
 	size_t pos;
 	while ((pos = str.find_first_of("/")) != std::string::npos)
 	{
 		str.replace(pos, 1, "\\");
 	}
-	CCLOG("=END PATH", str.c_str());
 
 	std::string fileName = str;
-	auto sprite = Sprite3D::create(fileName);
+
+	CCLOG("fileName: %s", fileName.c_str());
+	//sprite = Sprite3D::create(fileName);
+
+	sprite = PUParticleSystem3D::create(fileName);
+	sprite->setPosition(500, 500);
+	sprite->startParticleSystem();
+	auto pusize = sprite->getContentSize();
+	CCLOG("============%f%f", pusize.width, pusize.height);
+
 	if (!sprite)
 	{
 		return;
 	}
 	auto s = Director::getInstance()->getWinSize();
-	sprite->setScale(7);
-	sprite->setRotation3D(Vec3(0, 180, 0));
-	sprite->setPosition(layer->getContentSize().width/2, layer->getContentSize().height);
-	sprite->setAnchorPoint(Vec2(0, 1));
+	sprite->setScale(1);
+	//sprite->setRotation3D(Vec3(0, 180, 0));
 	layer->addChild(sprite);
+	//sprite->setPosition3D(Vec3(s.width / 2, s.height / 2, 0));
+	sprite->setCameraMask((unsigned short)CameraFlag::USER1);
+	//sprite->setForceDepthWrite(true);
 
-	//显示当前选择文件路径
-	//label = Label::createWithSystemFont("File Path:" + str, "Arial", 24);
-	//label->setAnchorPoint(Vec2(0, 0));
-	//labelLayer->addChild(label);
+	_camera2->lookAt(sprite->getPosition3D());
+	label->setString(a2u("正交"));
+	cameraStatu = false;
 
-	auto animation = Animation3D::create(fileName);
+	/*auto animation = Animation3D::create(fileName);
 	if (animation)
 	{
-		CCLOG("=============animation========");
-		auto animate = Animate3D::create(animation);
-		bool inverse = (std::rand() % 3 == 0);
-
-		int rand2 = std::rand();
-		float speed = 1.0f;
-		if (rand2 % 3 == 1)
-		{
-			speed = animate->getSpeed() + CCRANDOM_0_1();
-		}
-		else if (rand2 % 3 == 2)
-		{
-			speed = animate->getSpeed() - 0.5 * CCRANDOM_0_1();
-		}
-		animate->setSpeed(inverse ? -speed : speed);
-
-		sprite->runAction(RepeatForever::create(animate));
-	}
-
-	//灯光
-	auto _directionalLight = DirectionLight::create(Vec3(1.0f, -1.0f, 0.0f), Color3B(255, 255, 0));
-
-	_directionalLight->retain();
-
-	_directionalLight->setEnabled(true);
-
-	addChild(_directionalLight);
-
-	//_directionalLight->setCameraMask(2);
+		auto ani = Animate3D::create(animation);
+		sprite->runAction(RepeatForever::create(ani));
+	}*/
 }
 
 void HelloWorld::getFiles(string path, vector<string>& files)
@@ -405,15 +550,89 @@ void HelloWorld::menuCloseCallback(Ref* pSender)
 }
 
 
-
 //table
 void HelloWorld::tableCellTouched(TableView* table, TableViewCell* cell)
 {
-	//CCLOG("cell touched at index: %ld", static_cast<long>(cell->getIdx()));
-	CCLOG("tableCellTouched == %s", targetFiles[cell->getIdx()].c_str());
-
 	createSpriteFormPath(targetFiles[cell->getIdx()].c_str());
-	//initCamera();
+}
+
+void HelloWorld::changeScale(Ref* pSender, int i)
+{
+	if (sprite)
+	{
+		sprite->setScale(i);
+
+	}
+}
+void HelloWorld::changeRota(Ref* pSender, bool i)
+{
+	_eventDispatcher->removeEventListener(listener);
+	_eventDispatcher->removeEventListener(listener2);
+	selectjpg3->setVisible(false);
+
+	moveStatu = false;
+	listener = EventListenerTouchAllAtOnce::create();
+	listener->onTouchesMoved = CC_CALLBACK_2(HelloWorld::onTouchesMoved, this);
+	listener->onTouchesEnded = CC_CALLBACK_2(HelloWorld::onTouchesEnded, this);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+
+	rotaStatu = i;
+	selectjpg1->setVisible(rotaStatu);
+	CCLOG("selectjpg2->isVisible()  %d", selectjpg2->isVisible());
+	selectjpg2->setVisible(!rotaStatu);
+
+}
+void HelloWorld::changeTouchEvent()
+{
+	if (sprite==nullptr)
+	{
+		return;
+	}
+	_eventDispatcher->removeEventListener(listener);
+	_eventDispatcher->removeEventListener(listener2);
+	selectjpg3->setVisible(!moveStatu);
+
+	if (moveStatu)
+	{
+		/*selectjpg1->setVisible(rotaStatu);
+		selectjpg2->setVisible(!rotaStatu);*/
+
+		moveStatu = false;
+		listener = EventListenerTouchAllAtOnce::create();
+		listener->onTouchesMoved = CC_CALLBACK_2(HelloWorld::onTouchesMoved, this);
+		listener->onTouchesEnded = CC_CALLBACK_2(HelloWorld::onTouchesEnded, this);
+		_eventDispatcher->addEventListenerWithSceneGraphPriority(listener, this);
+	}
+	else
+	{
+	/*	selectjpg1->setVisible(false);
+		selectjpg2->setVisible(false);*/
+		moveStatu = true;
+		listener2 = EventListenerTouchOneByOne::create();
+		listener2->setSwallowTouches(true);
+		listener2->onTouchBegan = CC_CALLBACK_2(HelloWorld::OnTouchBeganRole, this);
+		listener2->onTouchMoved = CC_CALLBACK_2(HelloWorld::OnTouchMovedRole, this);
+		listener2->onTouchEnded = CC_CALLBACK_2(HelloWorld::OnTouchEndedRole, this);
+		_eventDispatcher->addEventListenerWithSceneGraphPriority(listener2, sprite);
+
+	}
+
+}
+void HelloWorld::pauseAction()
+{
+	if (actionStatu)
+	{
+		auto director = Director::getInstance();
+		director->getActionManager()->pauseTarget(sprite);
+		actionStatu = false;
+	} 
+	else
+	{
+		auto director = Director::getInstance();
+		director->getActionManager()->resumeTarget(sprite);
+		actionStatu = true;
+	}
+
 }
 
 Size HelloWorld::tableCellSizeForIndex(TableView *table, ssize_t idx)
@@ -464,7 +683,7 @@ TableViewCell* HelloWorld::tableCellAtIndex(TableView *table, ssize_t idx)
 
 	return cell;
 }
-//计算c3b总数
+
 void HelloWorld::reckonNum()
 {
 	char str[30];
@@ -474,22 +693,196 @@ void HelloWorld::reckonNum()
 	{
 		cout << files[i].c_str() << endl;
 		std::string ext = FileUtils::getInstance()->getFileExtension(files[i].c_str()); //获取文件后缀
-		std::string targetExt = ".c3b";
+		std::string targetExt = ".pu";
 		int temp = ext.compare(targetExt);
 		if (temp == 0)
 		{
 			j += 1;
-			
 			targetFiles.push_back(files[i]);
 		}
 
 	}
 	filesNum = j;
-	CCLOG("has %d .c3b files", filesNum);
+}
+void HelloWorld::onTouchesMoved(const std::vector<Touch*>& touches, cocos2d::Event  *event)
+{
+	if (!sprite)
+	{
+		return;
+	}
+	if (touches.size())
+	{
+		auto touch = touches[0];
+		auto delta = touch->getDelta();
+		
+		if (rotaStatu)
+		{
+			if (fabs(delta.x) > 1.5) {
+				_angleX -= CC_DEGREES_TO_RADIANS(delta.x);
+			}
+			if (fabs(delta.y) > 1.5) {
+				_angleY -= CC_DEGREES_TO_RADIANS(delta.y);
+			}
+			sprite->setRotation3D(Vec3(-180 * _angleY, -180 * _angleX, sprite->getRotation3D().z));
+		} 
+		else
+		{
+			_angleX -= CC_DEGREES_TO_RADIANS(delta.x);
+			sprite->setRotation3D(Vec3(sprite->getRotation3D().x, -180 * _angleX, sprite->getRotation3D().z));
+		}
+		return;
+	}
+}
+
+void HelloWorld::onTouchesEnded(const std::vector<cocos2d::Touch*>& touches, cocos2d::Event *event)
+{
+
 }
 ssize_t HelloWorld::numberOfCellsInTableView(TableView *table)
 {	
 	return filesNum;
 }
 
+void HelloWorld::onTouchesBegan(const std::vector<Touch*>& touches, cocos2d::Event  *event)
+{
 
+}
+
+//void HelloWorld::onTouchesMoved(const std::vector<Touch*>& touches, cocos2d::Event  *event)
+//{
+//
+//	auto target = static_cast<Sprite3D*>(event->getCurrentTarget());
+//	target->setPosition(target->getPosition() + touches[0]->getDelta());
+//}
+//
+//
+//void HelloWorld::onTouchesEnded(const std::vector<Touch*>& touches, cocos2d::Event  *event)
+//{
+//
+//}
+
+void HelloWorld::onClickTrackNode(bool bClicked)
+{
+	auto pTextField = (TextFieldTTF*)_trackNode;
+	if (bClicked)
+	{
+		pTextField->attachWithIME();
+	}
+	else
+	{
+		pTextField->detachWithIME();
+		auto text = pTextField->getString();
+		if (sprite && text.length() != 0)
+		{
+			sprite->setScale(atof(text.c_str()));
+		}
+	}
+}
+
+bool HelloWorld::onTouchBegan(Touch  *touch, Event  *event)
+{
+	//CCLOG("++++++++++++++++++++++++++++++++++++++++++++");
+	_beginPos = touch->getLocation();
+	return true;
+}
+
+void HelloWorld::onTouchEnded(Touch  *touch, Event  *event)
+{
+	if (!_trackNode)
+	{
+		return;
+	}
+
+	auto endPos = touch->getLocation();
+
+	float delta = 5.0f;
+	if (std::abs(endPos.x - _beginPos.x) > delta
+		|| std::abs(endPos.y - _beginPos.y) > delta)
+	{
+		// not click
+		_beginPos.x = _beginPos.y = -1;
+		return;
+	}
+
+	// decide the trackNode is clicked.
+	Rect rect;
+	rect.size = _trackNode->getContentSize();
+	auto clicked = isScreenPointInRect(endPos, Camera::getVisitingCamera(), _trackNode->getWorldToNodeTransform(), rect, nullptr);
+	this->onClickTrackNode(clicked);
+}
+bool HelloWorld::OnTouchBeganRole(Touch* touch, Event* event)
+{
+	
+	auto target = static_cast<Sprite3D*>(event->getCurrentTarget());
+
+	Rect rect = target->getBoundingBox();
+	CCLOG("rect============%d", rect);
+	//if (rect.containsPoint(touch->getLocation()))
+	{
+		//log("sprite3d began... x = %f, y = %f", touch->getLocation().x, touch->getLocation().y);
+		target->setOpacity(100);
+		return true;
+	}
+	return false;
+}
+
+void HelloWorld::OnTouchMovedRole(Touch* touch, Event* event)
+{
+	auto target = static_cast<Sprite3D*>(event->getCurrentTarget());
+	target->setPosition(target->getPosition() + touch->getDelta());
+}
+
+void HelloWorld::OnTouchEndedRole(Touch* touch, Event* event)
+{
+	auto target = static_cast<Sprite3D*>(event->getCurrentTarget());
+	Vec3 aa = target->getPosition3D();
+	log("sprite3d onTouchesEnded.. %f %f %f", aa.x, aa.y, aa.z);
+	target->setOpacity(255);
+}
+
+
+
+
+
+
+
+//中文转码
+int code_convert(const char *from_charset, const char *to_charset, const char *inbuf, size_t inlen, char *outbuf, size_t outlen)
+{
+	iconv_t cd;
+	const char *temp = inbuf;
+	const char **pin = &temp;
+	char **pout = &outbuf;
+	memset(outbuf, 0, outlen);
+	cd = iconv_open(to_charset, from_charset);
+	if (cd == 0) return -1;
+	if (iconv(cd, pin, &inlen, pout, &outlen) == -1) return -1;
+	iconv_close(cd);
+	return 0;
+}
+
+std::string u2a(const char *inbuf)
+{
+	size_t inlen = strlen(inbuf);
+	char * outbuf = new char[inlen * 2 + 2];
+	std::string strRet;
+	if (code_convert("utf-8", "gb2312", inbuf, inlen, outbuf, inlen * 2 + 2) == 0)
+	{
+		strRet = outbuf;
+	}
+	delete[] outbuf;
+	return strRet;
+}
+
+std::string a2u(const char *inbuf)
+{
+	size_t inlen = strlen(inbuf);
+	char * outbuf = new char[inlen * 2 + 2];
+	std::string strRet;
+	if (code_convert("gb2312", "utf-8", inbuf, inlen, outbuf, inlen * 2 + 2) == 0)
+	{
+		strRet = outbuf;
+	}
+	delete[] outbuf;
+	return strRet;
+}

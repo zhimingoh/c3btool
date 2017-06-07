@@ -23,7 +23,7 @@ public:
 
     // a selector callback
     void menuCloseCallback(cocos2d::Ref* pSender);
-	void selectFile(cocos2d::Ref* pSender);
+	void selectFile();
 
 	void createSpriteFormPath(std::string str);
 	void getFiles(std::string path, vector<std::string>& files);
@@ -32,6 +32,7 @@ public:
 	std::string HelloWorld::getApplicationPath();
 	char g_szFileName[MAX_PATH];
 	void HelloWorld::reckonNum();
+
 	 void initCamera();
 	 void onEnter();
 	 void onExit();
@@ -47,10 +48,31 @@ public:
 
 	virtual void update(float dt) override;
 
+	void HelloWorld::changeScale(Ref* pSender, int i);
+	void HelloWorld::changeRota(Ref* pSender, bool i);
+	void HelloWorld::pauseAction();
+	void HelloWorld::changeBG(std::string str);
+	void HelloWorld::changeCamera();
+	void HelloWorld::changeTouchEvent();
+
+	void onTouchesBegan(const std::vector<cocos2d::Touch*>& touches, cocos2d::Event  *event);
+	void onTouchesMoved(const std::vector<cocos2d::Touch*>& touches, cocos2d::Event  *event);
+	void onTouchesEnded(const std::vector<cocos2d::Touch*>& touches, cocos2d::Event  *event);
+
+	bool OnTouchBeganRole(cocos2d::Touch* touch, cocos2d::Event* event);
+	void OnTouchMovedRole(cocos2d::Touch* touch, cocos2d::Event* event);
+	void OnTouchEndedRole(cocos2d::Touch* touch, cocos2d::Event* event);
+
+	bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
+	void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
+	void onClickTrackNode(bool bClicked);
+
+	float _angleX, _angleY;
+
 private:
 	std::vector<cocos2d::Sprite3D*> _sprits;
 	int _animateQuality;
-	std::vector<cocos2d::Sprite3D*> sprite;
+	//std::vector<cocos2d::Sprite3D*> sprite;
 
 protected:
 	cocos2d::Node* _camControlNode;
@@ -58,8 +80,9 @@ protected:
 	cocos2d::EventListenerTouchOneByOne* _lis;
 	cocos2d::BillBoard* bill1;
 	cocos2d::Camera *_camera;
-
+	cocos2d::Camera *_camera2;
      //implement the "static create()" method manually
 };
+
 
 #endif // __HELLOWORLD_SCENE_H__
